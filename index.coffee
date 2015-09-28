@@ -1,4 +1,4 @@
-command:"pmset -g batt",
+command: "{ pmset -g batt; system_profiler SPPowerDataType | grep 'Cycle Count' | awk '{print $3}'; }",
 
 refreshFrequency: 2000
 
@@ -88,6 +88,9 @@ style: """
 
   .text-right
     text-align:right
+
+  .text-center
+    text-align:center
 """
 
 
@@ -97,10 +100,12 @@ render: -> """
     <table class="stats-container" width="100%">
       <tr>
         <td class="stat"><span class="battery-remaining"></span></td>
+        <td class="stat text-center"><span class="charge-cycle"></span></td>
         <td class="stat text-right"><span class="time-to-fullcharge"></span></td>
       </tr>
       <tr>
         <td class="label">Remaining</td>
+        <td class="label text-center">Charge Cycle</td>
         <td class="label text-right">Time To Full Charge</td>
       </tr>
     </table>
@@ -111,7 +116,7 @@ render: -> """
 """
 
 update: (output, domEl) ->
-  updateStat = (battery_percent, time_to_fullcharge, status) ->
+  updateStat = (battery_percent, time_to_fullcharge, charge_cycle, status) ->
     percent = battery_percent + "%"
 
     sel = 'battery-remaining';
@@ -119,18 +124,28 @@ update: (output, domEl) ->
     $(domEl).find(".bar-#{sel}").css "width", percent
     $(domEl).find(".bar-#{sel}").addClass status
 
+    sel = 'charge-cycle'
+    $(domEl).find(".#{sel}").text charge_cycle
+
     sel = 'time-to-fullcharge'
     $(domEl).find(".#{sel}").text time_to_fullcharge
 
-  battery_percent = output.match(/[0-9]+%/)[0].replace(/[^0-9.]/g, '')
-  parsed_battery_int = parseInt(battery_percent)
+  #charge_cycle
+  charge_cycle = output.match(/[0-9]+\n$/)[0];
 
+  #battery_percent
+  battery_percent = output.match(/[0-9]+%/)[0].replace(/[^0-9.]/g, '')
+  parsed_battery_int = parseInt battery_percent
+
+  #time for full charge
   time_to_fullcharge = output.match(/[0-9]+:[0-9]+ remaining/)[0].split(' remaining')[0];
 
+
+  #figure out status
   status = 'high'
-  if(parsed_battery_int < 30)
+  if parsed_battery_int < 30
     status = 'low'
-  else if(parsed_battery_int < 60)
+  else if parsed_battery_int < 60
     status = 'medium'
 
-  updateStat parsed_battery_int, time_to_fullcharge, status
+  updateStat parsed_battery_int, time_to_fullcharge, charge_cycle, status
