@@ -1,4 +1,4 @@
-command:"pmset -g batt | grep \"%\" | awk 'BEGINN { FS = \";\" };{ print $3,$2 }' | sed -e 's/-I/I/' -e 's/-0//' -e 's/;//' -e 's/;//'",
+command:"pmset -g batt",
 
 refreshFrequency: 2000
 
@@ -85,6 +85,9 @@ style: """
 
   .bar-battery-remaining.high
     background: rgba(#0bf, .5)
+
+  .text-right
+    text-align:right
 """
 
 
@@ -94,9 +97,11 @@ render: -> """
     <table class="stats-container" width="100%">
       <tr>
         <td class="stat"><span class="battery-remaining"></span></td>
+        <td class="stat text-right"><span class="time-to-fullcharge"></span></td>
       </tr>
       <tr>
         <td class="label">Remaining</td>
+        <td class="label text-right">Time To Full Charge</td>
       </tr>
     </table>
     <div class="bar-container">
@@ -106,15 +111,21 @@ render: -> """
 """
 
 update: (output, domEl) ->
-  updateStat = (sel, usage, status) ->
-    percent = usage + "%"
-    # $(domEl).find(".#{sel}").text usage + '%'
-    $(domEl).find(".#{sel}").text usage + '%'
+  updateStat = (battery_percent, time_to_fullcharge, status) ->
+    percent = battery_percent + "%"
+
+    sel = 'battery-remaining';
+    $(domEl).find(".#{sel}").text battery_percent + '%'
     $(domEl).find(".bar-#{sel}").css "width", percent
     $(domEl).find(".bar-#{sel}").addClass status
 
-  battery_percent = output.replace(/[^0-9.]/g, '')
+    sel = 'time-to-fullcharge'
+    $(domEl).find(".#{sel}").text time_to_fullcharge
+
+  battery_percent = output.match(/[0-9]+%/)[0].replace(/[^0-9.]/g, '')
   parsed_battery_int = parseInt(battery_percent)
+
+  time_to_fullcharge = output.match(/[0-9]+:[0-9]+ remaining/)[0].split(' remaining')[0];
 
   status = 'high'
   if(parsed_battery_int < 30)
@@ -122,4 +133,4 @@ update: (output, domEl) ->
   else if(parsed_battery_int < 60)
     status = 'medium'
 
-  updateStat 'battery-remaining', parsed_battery_int, status
+  updateStat parsed_battery_int, time_to_fullcharge, status
