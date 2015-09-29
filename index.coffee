@@ -102,7 +102,7 @@ render: -> """
         <td class="stat"><span class="battery-remaining"></span></td>
         <td class="stat text-center"><span class="charge-cycle"></span></td>
         <td class="stat text-center"><span class="power-source"></span></td>
-        <td class="stat text-right"><span class="time-to-fullcharge"></span></td>
+        <td class="stat text-right"><span class="charge-time-delta"></span></td>
       </tr>
       <tr>
         <td class="label">Remaining</td>
@@ -118,6 +118,8 @@ render: -> """
 """
 
 update: (output, domEl) ->
+  domElJquery = $(domEl)
+
   updateStat = (battery_percent, charge_time_delta, charge_cycle, charge_status, power_source) ->
     percent = battery_percent + "%"
 
@@ -128,24 +130,13 @@ update: (output, domEl) ->
     else if parsed_battery_int < 60
       status_text = 'medium'
 
-    sel = '.battery-remaining';
-    $(domEl).find("#{sel}").text battery_percent + '%'
-
-    sel = '.bar-battery-remaining'
-    $(domEl).find(sel).css('width', percent)
+    domElJquery.find('.charge-cycle').text charge_cycle
+    domElJquery.find('.charge-status-label').text charge_status
+    domElJquery.find('.power-source').text power_source
+    domElJquery.find('.charge-time-delta').text if charge_time_delta == '0:00' then 'Charged' else charge_time_delta
+    domElJquery.find('.battery-remaining').text battery_percent + '%'
+    domElJquery.find('.bar-battery-remaining').css('width', percent)
       .addClass status_text
-
-    sel = '.charge-cycle'
-    $(domEl).find("#{sel}").text charge_cycle
-
-    sel = '.time-to-fullcharge'
-    $(domEl).find("#{sel}").text charge_time_delta
-
-    sel = '.charge-status-label'
-    $(domEl).find("#{sel}").text charge_status
-
-    sel = '.power-source'
-    $(domEl).find("#{sel}").text power_source
 
 
   #charge_cycle
