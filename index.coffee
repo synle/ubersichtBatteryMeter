@@ -1,6 +1,6 @@
 command: "{ pmset -g batt; system_profiler SPPowerDataType | grep 'Cycle Count' | awk '{print $3}'; }",
 
-refreshFrequency: 2000
+refreshFrequency: 5000
 
 style: """
   // Change bar height
@@ -101,12 +101,14 @@ render: -> """
       <tr>
         <td class="stat"><span class="battery-remaining"></span></td>
         <td class="stat text-center"><span class="charge-cycle"></span></td>
+        <td class="stat text-center"><span class="power-source"></span></td>
         <td class="stat text-right"><span class="time-to-fullcharge"></span></td>
       </tr>
       <tr>
         <td class="label">Remaining</td>
         <td class="label text-center">Charge Cycle</td>
-        <td class="label text-right">Time To Full Charge</td>
+        <td class="label text-center">Power Source</td>
+        <td class="label text-right charge-status-label"></td>
       </tr>
     </table>
     <div class="bar-container">
@@ -116,19 +118,35 @@ render: -> """
 """
 
 update: (output, domEl) ->
-  updateStat = (battery_percent, time_to_fullcharge, charge_cycle, status) ->
+  updateStat = (battery_percent, charge_time_delta, charge_cycle, charge_status, power_source) ->
     percent = battery_percent + "%"
 
-    sel = 'battery-remaining';
-    $(domEl).find(".#{sel}").text battery_percent + '%'
-    $(domEl).find(".bar-#{sel}").css "width", percent
-    $(domEl).find(".bar-#{sel}").addClass status
+    #figure out status_text
+    status_text = 'high'
+    if parsed_battery_int < 30
+      status_text = 'low'
+    else if parsed_battery_int < 60
+      status_text = 'medium'
 
-    sel = 'charge-cycle'
-    $(domEl).find(".#{sel}").text charge_cycle
+    sel = '.battery-remaining';
+    $(domEl).find("#{sel}").text battery_percent + '%'
 
-    sel = 'time-to-fullcharge'
-    $(domEl).find(".#{sel}").text time_to_fullcharge
+    sel = '.bar-battery-remaining'
+    $(domEl).find('' + sel).css('width', percent)
+      .addClass status_text
+
+    sel = '.charge-cycle'
+    $(domEl).find("#{sel}").text charge_cycle
+
+    sel = '.time-to-fullcharge'
+    $(domEl).find("#{sel}").text charge_time_delta
+
+    sel = '.charge-status-label'
+    $(domEl).find("#{sel}").text charge_status
+
+    sel = '.power-source'
+    $(domEl).find("#{sel}").text power_source
+
 
   #charge_cycle
   charge_cycle = output.match(/[0-9]+\n$/)[0];
@@ -138,14 +156,20 @@ update: (output, domEl) ->
   parsed_battery_int = parseInt battery_percent
 
   #time for full charge
-  time_to_fullcharge = output.match(/[0-9]+:[0-9]+ remaining/)[0].split(' remaining')[0];
+  if output.indexOf('discharging') >= 0
+    charge_status = 'Remaining Time'
+  else
+    charge_status = 'Time until Full'
 
+  try
+    charge_time_delta = output.match(/[0-9]+:[0-9]+ remaining/)[0].split(' remaining')[0]
+  catch ex
+    charge_time_delta = 'no estimate'
 
-  #figure out status
-  status = 'high'
-  if parsed_battery_int < 30
-    status = 'low'
-  else if parsed_battery_int < 60
-    status = 'medium'
+  #power Source
+  if output.indexOf('AC') >= 0
+    power_source = 'AC'
+  else
+    power_source = 'Battery'
 
-  updateStat parsed_battery_int, time_to_fullcharge, charge_cycle, status
+  updateStat parsed_battery_int, charge_time_delta, charge_cycle, charge_status, power_source
