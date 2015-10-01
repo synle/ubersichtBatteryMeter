@@ -10,7 +10,7 @@ style: """
   widget-align = left
 
   // Position this where you want
-  top 355px
+  top 200px
   left 25px
 
   // Statistics text settings
@@ -137,7 +137,6 @@ update: (output, domEl) ->
     domElJquery.find('.battery-remaining').text battery_percent + '%'
     domElJquery.find('.bar-battery-remaining').css('width', percent)
       .addClass status_text
-
 
   #charge_cycle
   charge_cycle = output.match(/[0-9]+\n$/)[0];
