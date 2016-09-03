@@ -10,18 +10,18 @@ style: """
   widget-align = left
 
   // Position this where you want
-  top 200px
-  left 25px
+  top 295px
+  left 15px
 
   // Statistics text settings
   color #fff
   font-family Helvetica Neue
-  background rgba(#000, .5)
+  background rgba(#000, .7)
   padding 10px 10px 15px
   border-radius 5px
 
   .container
-    width: 300px
+    width: 250px
     text-align: widget-align
     position: relative
     clear: both
@@ -118,8 +118,6 @@ render: -> """
 """
 
 update: (output, domEl) ->
-  domElJquery = $(domEl)
-
   updateStat = (battery_percent, charge_time_delta, charge_cycle, charge_status, power_source) ->
     percent = battery_percent + "%"
 
@@ -138,28 +136,35 @@ update: (output, domEl) ->
     domElJquery.find('.bar-battery-remaining').css('width', percent)
       .addClass status_text
 
+  #init the dom
+  domElJquery = $(domEl)
+
   #charge_cycle
-  charge_cycle = output.match(/[0-9]+\n$/)[0];
-
-  #battery_percent
-  battery_percent = output.match(/[0-9]+%/)[0].replace(/[^0-9.]/g, '')
-  parsed_battery_int = parseInt battery_percent
-
-  #time for full charge
-  if output.indexOf('discharging') >= 0
-    charge_status = 'Remaining Time'
-  else
-    charge_status = 'Time until Full'
-
   try
-    charge_time_delta = output.match(/[0-9]+:[0-9]+ remaining/)[0].split(' remaining')[0]
-  catch ex
-    charge_time_delta = 'no estimate'
+    charge_cycle = output.match(/[0-9]+\n$/)[0];
 
-  #power Source
-  if output.indexOf('AC') >= 0
-    power_source = 'AC'
-  else
-    power_source = 'Battery'
+    #battery_percent
+    battery_percent = output.match(/[0-9]+%/)[0].replace(/[^0-9.]/g, '')
+    parsed_battery_int = parseInt battery_percent
 
-  updateStat parsed_battery_int, charge_time_delta, charge_cycle, charge_status, power_source
+    #time for full charge
+    if output.indexOf('discharging') >= 0
+      charge_status = 'Remaining Time'
+    else
+      charge_status = 'Time until Full'
+
+    try
+      charge_time_delta = output.match(/[0-9]+:[0-9]+ remaining/)[0].split(' remaining')[0]
+    catch ex
+      charge_time_delta = 'no estimate'
+
+    #power Source
+    if output.indexOf('AC') >= 0
+      power_source = 'AC'
+    else
+      power_source = 'Battery'
+
+    updateStat parsed_battery_int, charge_time_delta, charge_cycle, power_source, charge_status
+  catch error
+    # if mac desktop, then hide it
+    domElJquery.hide()
